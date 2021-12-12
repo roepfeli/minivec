@@ -38,6 +38,14 @@ impl<T: Clone> Drop for MiniVec<T> {
     }
 }
 
+// TODO: find idiomatic way of adding todos
+// TODO: generate the README from code? (or make it more fancy)
+// TODO: add test-coverage to the README
+// TODO: add integration-tests
+// TODO: figure out how to do memory-leakage testing (valgrind?)
+// TODO: extend features with TDD
+// TODO: add semantic versioning so that it is trivial to use with cargo!
+
 impl<T: Clone> MiniVec<T> {
     const DEFAULT_GROWTH: usize = 2;
     const DEFAULT_FIRST_CAP: usize = 2;
@@ -105,8 +113,14 @@ impl<T: Clone> MiniVec<T> {
             Some(v) => {
                 let layout = alloc::Layout::array::<T>(self.capacity).unwrap();
                 self.capacity *= MiniVec::<T>::DEFAULT_GROWTH;
-                self.buffer =
-                    Some(unsafe { alloc::realloc(v as *mut u8, layout, self.capacity) as *mut T });
+                self.buffer = Some(unsafe {
+                    alloc::realloc(
+                        v as *mut u8,
+                        layout,
+                        self.capacity * std::mem::size_of::<T>(),
+                    ) as *mut T
+                });
+                // TODO: check for self.buffer to be null here...
             }
             None => {
                 self.capacity = MiniVec::<T>::DEFAULT_FIRST_CAP;
@@ -258,5 +272,14 @@ mod tests {
         let mut vector = MiniVec::<i32>::new();
 
         vector.remove(0);
+    }
+
+    #[test]
+    fn correct_realloc_call() {
+        let mut vector = MiniVec::<i32>::new();
+
+        for i in 0..1000 {
+            vector.push(i);
+        }
     }
 }
