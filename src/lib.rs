@@ -22,6 +22,7 @@
 //! ```
 use std::alloc;
 use std::ops::Index;
+use std::ops::IndexMut;
 
 pub struct MiniVec<T: Clone> {
     capacity: usize,
@@ -38,13 +39,13 @@ impl<T: Clone> Drop for MiniVec<T> {
     }
 }
 
+// TODO: Add more linting/formatting (https://dev.to/bampeers/rust-ci-with-github-actions-1ne9)
 // TODO: find idiomatic way of adding todos
+// TODO: create branches: dev, release and the feature branches
 // TODO: generate the README from code? (or make it more fancy)
 // TODO: add test-coverage to the README
 // TODO: add integration-tests
 // TODO: figure out how to do memory-leakage testing (valgrind?)
-// TODO: extend features with TDD
-// TODO: add semantic versioning so that it is trivial to use with cargo!
 
 impl<T: Clone> MiniVec<T> {
     const DEFAULT_GROWTH: usize = 2;
@@ -194,6 +195,16 @@ impl<T: Clone> Index<usize> for MiniVec<T> {
     }
 }
 
+impl<T: Clone> IndexMut<usize> for MiniVec<T> {
+    fn index_mut(&mut self, index: usize) -> &mut T {
+        if index >= self.size {
+            panic!("Error: Index too big for vector");
+        }
+
+        unsafe { &mut *(self.buffer.unwrap().offset(index as isize)) }
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -281,5 +292,38 @@ mod tests {
         for i in 0..1000 {
             vector.push(i);
         }
+    }
+
+    #[test]
+    fn mutable_indexing_valid() {
+        let mut vector = MiniVec::<i32>::new();
+
+        vector.push(0);
+        vector.push(1);
+        vector.push(2);
+        vector.push(3);
+
+        vector[0] = 200;
+        assert_eq!(vector[0], 200);
+        assert_eq!(vector.size(), 4);
+        assert_eq!(vector.capacity(), 4);
+
+        vector[3] = 120;
+        assert_eq!(vector[3], 120);
+        assert_eq!(vector.size(), 4);
+        assert_eq!(vector.capacity(), 4);
+
+        vector[2] = 90;
+        assert_eq!(vector[2], 90);
+        assert_eq!(vector.size(), 4);
+        assert_eq!(vector.capacity(), 4);
+    }
+
+    #[test]
+    #[should_panic]
+    fn mutable_indexing_invalid() {
+        let mut vector = MiniVec::<i32>::new();
+
+        vector[1000] = 30;
     }
 }
